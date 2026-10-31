@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ShiftPulse - Mesai & Maaş Takip</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b130e;
+      color: #e2e8f0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .neon-border-yellow {
+      box-shadow: 0 0 15px rgba(234, 179, 8, 0.25);
+      border: 1px solid rgba(234, 179, 8, 0.4);
+    }
+
+    .neon-border-green {
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.25);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+
+    .neon-border-blue {
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.6);
+    }
+
+    .neon-border-red {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+
+    .neon-border-purple {
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+      border: 1px solid rgba(168, 85, 247, 0.5);
+    }
+
+    .glow-text-yellow {
+      text-shadow: 0 0 10px rgba(234, 179, 8, 0.5);
+    }
+
+    .glow-text-green {
+      text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #22c55e;
+      border-radius: 4px;
+    }
+
+    /* Light Theme */
+    body.light-theme {
+      background-color: #f0fdf4;
+      color: #0f172a;
+    }
+    body.light-theme .bg-card {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    body.light-theme .bg-nav {
+      background-color: #ffffff !important;
+      border-top-color: #e2e8f0 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-24 relative overflow-x-hidden select-none">
+
+  <!-- BACKGROUND PHOTO OVERLAY -->
+  <div id="bgPhotoOverlay" class="fixed inset-0 pointer-events-none opacity-20 bg-cover bg-center z-0 transition-all"></div>
+
+  <!-- MAIN CONTAINER -->
+  <div class="relative z-10 max-w-lg mx-auto px-4 pt-4">
+
+    <!-- HEADER -->
+    <header class="flex items-center justify-between py-3 mb-4 border-b border-emerald-900/40">
+      <div class="flex items-center gap-2">
+        <!-- SOL ÜST MENÜ BUTONU -->
+        <button onclick="toggleSideMenu()" class="p-2 rounded-xl bg-black/60 border border-gray-800 text-yellow-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <!-- LOGO VE İSİM -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-11 h-11 rounded-xl p-0.5 shadow-lg shadow-emerald-900/50 overflow-hidden flex items-center justify-center bg-black border border-emerald-500/40">
+            <svg class="w-9 h-9 text-emerald-400" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="42" stroke="#22c55e" stroke-width="5" stroke-dasharray="6 3"/>
+              <circle cx="50" cy="50" r="35" stroke="#eab308" stroke-width="3"/>
+              <path d="M52 12L28 52H48L42 88L72 44H52L52 12Z" fill="#22c55e" stroke="#eab308" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="50" cy="50" r="4" fill="#ffffff"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-emerald-400 to-emerald-200">
+              ShiftPulse
+            </h1>
+            <p class="text-[10px] text-emerald-500/80 font-medium tracking-wide">Çalışma Ritminiz & Kazanç Asistanınız</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAATE GÖRE DİNAMİK SELAMLAMA MESAJI -->
+      <div class="flex items-center gap-2">
+        <span id="dynamicGreeting" class="px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-500/20 to-emerald-500/20 text-yellow-300 border border-yellow-500/40 shadow-md">
+          ☀️ Günaydın
+        </span>
+      </div>
+    </header>
+
+    <!-- SOL ÜST YAN MENÜ -->
+    <div id="sideMenuOverlay" onclick="toggleSideMenu()" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden"></div>
+    <div id="sideMenu" class="fixed top-0 left-0 bottom-0 w-72 bg-gray-950 border-r border-emerald-900/50 p-5 z-50 transform -translate-x-full transition-transform duration-300 overflow-y-auto custom-scrollbar">
+      <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-black border border-emerald-500/40 flex items-center justify-center">
+            <svg class="w-6 h-6 text-emerald-400" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="42" stroke="#22c55e" stroke-width="5" stroke-dasharray="6 3"/>
+              <path d="M52 12L28 52H48L42 88L72 44H52L52 12Z" fill="#22c55e" stroke="#eab308" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3 class="text-sm font-extrabold text-yellow-400">ShiftPulse Menü</h3>
+        </div>
+        <button onclick="toggleSideMenu()" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="toggleSideMenu(); openMenuModal('company');" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-gray-200 hover:border-emerald-500 transition flex items-center gap-2">
+          🏢 <span>İş Yeri Bilgileri</span>
+        </button>
+        <button onclick="toggleSideMenu(); openMenuModal('stats');" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-gray-200 hover:border-emerald-500 transition flex items-center gap-2">
+          📊 <span>İstatistikler & Analiz</span>
+        </button>
+        <button onclick="toggleSideMenu(); openMenuModal('badges');" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-gray-200 hover:border-emerald-500 transition flex items-center gap-2">
+          🏅 <span>Rozetler & İlerleme</span>
+        </button>
+        <button onclick="toggleSideMenu(); openMenuModal('guidance');" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-gray-200 hover:border-emerald-500 transition flex items-center gap-2">
+          📚 <span>İş Yeri Rehberlik Hizmetleri</span>
+        </button>
+        <button onclick="toggleSideMenu(); openMenuModal('isg');" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-yellow-400 hover:border-yellow-500 transition flex items-center gap-2">
+          ⚠️ <span>İSG & Detaylı Güvenlik</span>
+        </button>
+        <button onclick="toggleSideMenu(); openMenuModal('tax');" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-gray-200 hover:border-emerald-500 transition flex items-center gap-2">
+          ⚖️ <span>Vergi Danışmanı</span>
+        </button>
+        <button onclick="toggleSideMenu(); openMenuModal('sgk');" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-gray-200 hover:border-emerald-500 transition flex items-center gap-2">
+          🧮 <span>SGK Prim Hesaplayıcı</span>
+        </button>
+        <button onclick="toggleSideMenu(); openKvkkModal();" class="w-full text-left p-2.5 rounded-xl bg-black/50 border border-gray-800 text-xs font-bold text-gray-200 hover:border-emerald-500 transition flex items-center gap-2">
+          📄 <span>KVKK Metni</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 1. ANA SAYFA (DASHBOARD - 4'LÜ ÖZET BAR YAPISI) -->
+    <section id="tab-home" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-card bg-emerald-950/30 p-3.5 rounded-2xl neon-border-green relative">
+          <div class="flex justify-between items-center mb-1">
+            <p class="text-[11px] text-emerald-400/80 font-medium">Net Maaş</p>
+            <button onclick="toggleSalaryMask()" class="text-emerald-400 hover:text-white" title="Tüm Kazançları Gizle/Göster">
+              <svg id="eyeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <h3 class="text-xl font-black text-emerald-400 glow-text-green" id="homeNetSalary">₺0</h3>
+          <p class="text-[10px] text-gray-400 mt-0.5">Temel Aylık Net</p>
+        </div>
+
+        <div class="bg-card bg-yellow-950/20 p-3.5 rounded-2xl neon-border-yellow">
+          <p class="text-[11px] text-yellow-400/80 font-medium">Mesai Kazancı</p>
+          <h3 class="text-xl font-black text-yellow-400 glow-text-yellow" id="homeOvertimePay">₺0</h3>
+          <p class="text-[10px] text-yellow-500/80 mt-0.5" id="homeOvertimeHoursSub">0 Saat Toplam</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <!-- TOPLAM MESAİ SAATİ -->
+        <div class="bg-card bg-blue-950/20 p-3.5 rounded-2xl neon-border-blue">
+          <p class="text-[11px] text-blue-400/80 font-medium">Aylık Toplam Mesai</p>
+          <h3 class="text-xl font-black text-blue-400" id="homeTotalOvertimeHours">0 Saat</h3>
+          <p class="text-[10px] text-blue-300/80 mt-0.5">Kayıtlı Çalışma</p>
+        </div>
+
+        <!-- TOPLAM HAK EDİŞ -->
+        <div class="bg-card bg-purple-950/20 p-3.5 rounded-2xl neon-border-purple">
+          <p class="text-[11px] text-purple-400/80 font-medium">Toplam Hak Ediş</p>
+          <h3 class="text-xl font-black text-purple-300" id="homeTotalEarnings">₺0</h3>
+          <p class="text-[10px] text-purple-400/80 mt-0.5">Maaş + Mesai</p>
+        </div>
+      </div>
+
+      <div class="bg-card bg-black/40 p-4 rounded-2xl border border-emerald-900/50">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm font-bold text-gray-200 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Son 7 Günlük Kazanç Dağılımı (₺)</span>
+          </h2>
+        </div>
+        <div class="h-44">
+          <canvas id="chartLast7Days"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-card bg-black/40 p-4 rounded-2xl border border-yellow-900/40">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm font-bold text-gray-200">Aylık Finans Dengesi (Gelir / Harcama)</h2>
+        </div>
+        <div class="h-40">
+          <canvas id="chartIncomeVSExpense"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TAKVİM & MESAİ GİRİŞİ -->
+    <section id="tab-calendar" class="space-y-4 hidden">
+      <div class="bg-card bg-black/50 p-4 rounded-2xl border border-emerald-900/40 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-extrabold text-yellow-400">Mesai Takvimi & Çalışma Kaydı</h3>
+          <p class="text-[11px] text-gray-400">Güne tıklayarak mesai veya devamsızlık girin.</p>
+        </div>
+
+        <div>
+          <input type="month" id="inputMonthYear" onchange="renderCalendar()" class="bg-black/60 border border-gray-700 rounded-xl px-3 py-1.5 text-gray-200 font-medium focus:outline-none focus:border-yellow-400 text-xs">
+        </div>
+      </div>
+
+      <div class="bg-card bg-black/60 p-4 rounded-2xl border border-emerald-900/60 neon-border-green">
+        <div class="flex justify-between items-center mb-4">
+          <button onclick="changeMonth(-1)" class="p-2 rounded-xl bg-emerald-950/60 text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <h3 id="calendarMonthTitle" class="text-base font-extrabold text-yellow-400 tracking-wide">Ekim 2026</h3>
+          <button onclick="changeMonth(1)" class="p-2 rounded-xl bg-emerald-950/60 text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-emerald-500 mb-2">
+          <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+        </div>
+
+        <div id="calendarGrid" class="grid grid-cols-7 gap-1.5"></div>
+      </div>
+
+      <div class="bg-card bg-black/50 p-4 rounded-2xl border border-gray-800">
+        <div class="flex justify-between items-center mb-3">
+          <h4 class="text-xs font-bold text-yellow-400 uppercase tracking-wider">Aylık Kayıtlı Mesailer</h4>
+          <span class="text-xs font-black text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800" id="txtCalendarTotalHours">Toplam: 0 Saat</span>
+        </div>
+        <div id="shiftListContainer" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+          <p class="text-xs text-gray-500 text-center py-4">Bu aya ait kayıtlı mesai bulunmuyor.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. CÜZDAN & HARCAMA TAKİBİ -->
+    <section id="tab-wallet" class="space-y-4 hidden">
+      <div class="bg-gradient-to-r from-emerald-950/60 via-black to-emerald-900/40 p-4 rounded-2xl border border-emerald-500/50 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-700">Güvenli Cüzdan</span>
+          <h3 class="text-sm font-extrabold text-white mt-1">Cüzdan & Harcama Takibi</h3>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-card bg-emerald-950/20 p-3.5 rounded-2xl border border-emerald-900/50">
+          <p class="text-[11px] text-gray-400">Toplam Gelir (Maaş+Mesai)</p>
+          <h4 class="text-lg font-black text-emerald-400" id="txtWalletIncome">₺0</h4>
+        </div>
+        <div class="bg-card bg-red-950/20 p-3.5 rounded-2xl border border-red-900/50">
+          <p class="text-[11px] text-gray-400">Toplam Harcamalar</p>
+          <h4 class="text-lg font-black text-red-400" id="txtWalletExpenses">₺0</h4>
+        </div>
+      </div>
+
+      <div class="bg-card bg-black/60 p-4 rounded-2xl border border-gray-800 space-y-3">
+        <h3 class="text-sm font-bold text-yellow-400">Yeni Harcama / Fatura Kaydı</h3>
+        <input type="text" id="inputExpTitle" placeholder="Açıklama (Örn: Kira, Fatura, Market)" class="w-full bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none">
+        <div class="grid grid-cols-2 gap-2">
+          <input type="number" id="inputExpAmount" placeholder="Tutar (₺)" class="bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-emerald-400 font-bold focus:outline-none">
+          <select id="selectExpCategory" class="bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-gray-300 focus:outline-none">
+            <option value="fatura">Fatura / Abonelik</option>
+            <option value="kira">Kira / Ev</option>
+            <option value="gida">Mutfak / Gıda</option>
+            <option value="ulasim">Ulaşım / Yakıt</option>
+          </select>
+        </div>
+        <button onclick="addExpense()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-black font-bold text-xs">Harcamayı Ekle</button>
+      </div>
+
+      <div class="bg-card bg-black/40 p-4 rounded-2xl border border-gray-800">
+        <h4 class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Aylık Harcama Geçmişi</h4>
+        <div id="expenseListContainer" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+          <p class="text-xs text-gray-500 text-center py-4">Henüz harcama kaydı eklenmedi.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. PROFİL -->
+    <section id="tab-profile" class="space-y-4 hidden">
+      <div class="bg-card bg-black/60 p-4 rounded-2xl border border-emerald-900/50 flex items-center gap-4">
+        <div class="relative group cursor-pointer" onclick="triggerProfilePhotoUpload()">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-yellow-500 to-emerald-500 p-0.5 shadow-lg flex items-center justify-center overflow-hidden">
+            <img id="imgProfileAvatar" class="w-full h-full object-cover rounded-[14px] hidden" alt="Profil Fotoğrafı">
+            <div id="avatarInitialsContainer" class="w-full h-full bg-black rounded-[14px] flex items-center justify-center">
+              <span class="text-xl font-black text-yellow-400" id="avatarInitials">K</span>
+            </div>
+          </div>
+          <span class="absolute -bottom-1 -right-1 bg-yellow-400 text-black p-1 rounded-full text-[10px]">📷</span>
+        </div>
+        <input type="file" id="inputProfilePhoto" accept="image/*" onchange="uploadProfilePhoto(event)" class="hidden">
+
+        <div>
+          <h3 class="text-base font-bold text-gray-100" id="txtProfileFullName">Kullanıcı</h3>
+          <p class="text-xs text-emerald-400 font-medium" id="txtProfileCompany">Şirket Belirtilmedi</p>
+          <p class="text-[11px] text-gray-400" id="txtProfileEmail">eposta@ornek.com</p>
+          <p class="text-[11px] text-gray-400" id="txtProfilePhone">Tel: Belirtilmedi</p>
+        </div>
+      </div>
+
+      <div class="bg-card bg-black/50 p-4 rounded-2xl border border-gray-800 space-y-3">
+        <h4 class="text-xs font-bold text-yellow-400 uppercase tracking-wider">Kullanıcı Bilgileri & Maaş</h4>
+        <div>
+          <label class="text-[10px] text-emerald-400 font-bold block mb-1">Aylık Net Maaşınız (₺) *</label>
+          <input type="number" id="inputSalary" value="54000" onchange="saveProfile()" class="w-full bg-emerald-950/40 border border-emerald-700/60 rounded-xl p-2.5 text-sm text-emerald-300 font-bold focus:outline-none focus:border-yellow-400">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-400 font-bold block mb-1">Adınız Soyadınız</label>
+          <input type="text" id="inputProfileName" placeholder="Adınız Soyadınız" onchange="saveProfile()" class="w-full bg-black border border-gray-700 rounded-xl p-2 text-xs text-gray-200 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-400 font-bold block mb-1">Şirket Adı</label>
+          <input type="text" id="inputProfileCompany" placeholder="Şirket Adı" onchange="saveProfile()" class="w-full bg-black border border-gray-700 rounded-xl p-2 text-xs text-gray-200 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-400 font-bold block mb-1">E-posta Adresi</label>
+          <input type="email" id="inputProfileEmail" placeholder="E-posta Adresi" onchange="saveProfile()" class="w-full bg-black border border-gray-700 rounded-xl p-2 text-xs text-gray-200 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] text-gray-400 font-bold block mb-1">Telefon Numarası</label>
+          <input type="tel" id="inputProfilePhone" placeholder="Telefon Numarası" onchange="saveProfile()" class="w-full bg-black border border-gray-700 rounded-xl p-2 text-xs text-gray-200 focus:outline-none">
+        </div>
+      </div>
+
+      <div class="bg-card bg-black/50 p-4 rounded-2xl border border-gray-800 space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-gray-300">Uygulama Dili / Language</span>
+          <select id="selectLanguage" class="bg-black border border-gray-700 rounded-xl px-3 py-1 text-xs text-yellow-400">
+            <option value="tr">Türkçe 🇹🇷</option>
+            <option value="en">English 🇬🇧</option>
+          </select>
+        </div>
+        <div class="flex justify-between items-center pt-2 border-t border-gray-800">
+          <span class="text-xs text-gray-300">Tema Modu</span>
+          <select id="selectTheme" onchange="changeTheme(this.value)" class="bg-black border border-gray-700 rounded-xl px-3 py-1 text-xs text-emerald-400">
+            <option value="dark">Koyu Neon (Dark)</option>
+            <option value="light">Açık (Light)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ARKA PLAN FOTOĞRAFI YÜKLEME -->
+      <div class="bg-card bg-emerald-950/20 p-4 rounded-2xl border border-emerald-700/40">
+        <h4 class="text-xs font-bold text-emerald-400 mb-1">❤️ Arka Plan Fotoğrafı</h4>
+        <p class="text-[11px] text-gray-400 mb-3">Uygulama arka planına sevdiğiniz birinin fotoğrafını yerleştirin.</p>
+        <input type="file" id="inputProPhoto" accept="image/*" onchange="uploadProPhoto(event)" class="hidden">
+        <button onclick="triggerPhotoUpload()" class="w-full py-2 rounded-xl bg-black/60 border border-emerald-500/50 text-emerald-300 text-xs font-bold">Fotoğraf Seç / Yükle</button>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3">
+        <button onclick="openKvkkModal()" class="py-2.5 rounded-xl bg-black/60 border border-gray-700 text-gray-300 text-xs font-bold">KVKK Metni</button>
+      </div>
+
+      <div class="bg-card bg-red-950/20 p-4 rounded-2xl border border-red-900/50 text-center">
+        <h4 class="text-xs font-bold text-red-400 mb-1">⚠️ Verileri Sıfırla</h4>
+        <p class="text-[11px] text-gray-400 mb-3">Tüm mesai ve harcama kayıtlarını tamamen siler.</p>
+        <button onclick="resetAllData()" class="w-full py-2 rounded-xl bg-red-900/60 border border-red-700 text-white text-xs font-bold hover:bg-red-800 transition">Tüm Verileri Sil</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- KAYIT MODALI -->
+  <div id="welcomeModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-gray-950 border border-emerald-500/50 rounded-3xl p-6 max-w-sm w-full neon-border-green max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="text-center mb-4">
+        <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-yellow-500 to-emerald-500 p-0.5 mb-2">
+          <div class="w-full h-full bg-black rounded-[14px] flex items-center justify-center text-yellow-400 font-bold text-xl">⚡</div>
+        </div>
+        <h3 class="text-xl font-black text-yellow-300">ShiftPulse'a Hoş Geldiniz</h3>
+        <p class="text-xs text-gray-400 mt-1">Hesaplamaların size özel yapılması için bilgilerinizi girin.</p>
+      </div>
+
+      <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-3">
+        <div>
+          <label class="text-[11px] text-gray-300 font-semibold block mb-1">Adınız Soyadınız *</label>
+          <input type="text" id="regName" required placeholder="Örn: Ahmet Yılmaz" class="w-full bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-yellow-400">
+        </div>
+        <div>
+          <label class="text-[11px] text-gray-300 font-semibold block mb-1">E-posta Adresiniz</label>
+          <input type="email" id="regEmail" placeholder="Örn: ahmet@example.com" class="w-full bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-yellow-400">
+        </div>
+        <div>
+          <label class="text-[11px] text-gray-300 font-semibold block mb-1">Şirket Adı</label>
+          <input type="text" id="regCompany" placeholder="Örn: Gemini Dijital" class="w-full bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-yellow-400">
+        </div>
+        <div>
+          <label class="text-[11px] text-gray-300 font-semibold block mb-1">Telefon Numarası</label>
+          <input type="tel" id="regPhone" placeholder="Örn: 0555 123 45 67" class="w-full bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-yellow-400">
+        </div>
+        <div>
+          <label class="text-[11px] text-gray-300 font-semibold block mb-1">Aylık Net Maaşınız (₺) *</label>
+          <input type="number" id="regSalary" required placeholder="Örn: 54000" class="w-full bg-black border border-gray-700 rounded-xl p-2.5 text-xs text-emerald-400 font-bold focus:outline-none focus:border-yellow-400">
+        </div>
+        <button type="submit" class="w-full py-3 mt-2 rounded-xl bg-gradient-to-r from-yellow-400 to-emerald-500 text-black font-extrabold text-sm shadow-lg">Giriş Yap ve Başla</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TAKVİM GÜN DÜZENLEME MODALI (DEVAMSIZLIK ALTINA RAPORLU EKLENDİ) -->
+  <div id="dayEditModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-gray-950 border border-yellow-500/50 rounded-3xl p-6 max-w-sm w-full neon-border-yellow relative">
+      <div class="flex justify-between items-center mb-4">
+        <h4 class="text-base font-bold text-yellow-400" id="selectedDateTitle">Gün Düzenle</h4>
+        <button onclick="closeDayEdit()" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-4 mb-4">
+        <div>
+          <label class="text-xs text-gray-300 block mb-1">Mesai Saati</label>
+          <input type="number" step="0.5" id="inputDayHours" placeholder="Örn: 2" class="w-full bg-black border border-gray-700 rounded-xl p-2.5 text-yellow-300 font-bold focus:outline-none focus:border-yellow-400">
+        </div>
+
+        <!-- MESAİ ORANI BUTON KARTI -->
+        <div class="bg-black/60 p-3.5 rounded-2xl border border-gray-800 space-y-2">
+          <label class="text-[11px] font-bold text-gray-300 uppercase tracking-wider block">MESAİ ORANI</label>
+          <div class="grid grid-cols-4 gap-2" id="rateButtonsContainer">
+            <button type="button" onclick="selectRate(0.5)" id="btnRate05" class="py-2.5 rounded-xl border border-gray-800 bg-black text-xs font-extrabold text-gray-300 hover:border-blue-500 transition">×0.5</button>
+            <button type="button" onclick="selectRate(1.0)" id="btnRate10" class="py-2.5 rounded-xl border border-gray-800 bg-black text-xs font-extrabold text-gray-300 hover:border-blue-500 transition">×1.0</button>
+            <button type="button" onclick="selectRate(1.5)" id="btnRate15" class="py-2.5 rounded-xl border border-gray-800 bg-black text-xs font-extrabold text-gray-300 hover:border-blue-500 transition">×1.5</button>
+            <button type="button" onclick="selectRate(2.0)" id="btnRate20" class="py-2.5 rounded-xl border border-gray-800 bg-black text-xs font-extrabold text-gray-300 hover:border-blue-500 transition">×2.0</button>
+          </div>
+          <p class="text-[10px] text-gray-400 flex items-center gap-1 pt-1" id="rateNoticeText">
+            <span>ℹ️</span> <span>Hafta içi mesaisi: ×1.0 | Hafta sonu: ×1.5</span>
+          </p>
+        </div>
+
+        <!-- DEVAMSIZLIK KUTUSU -->
+        <div class="p-3 bg-red-950/30 rounded-xl border border-red-900/50 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-bold text-red-400 block">Devamsızlık Yapıldı mı?</span>
+            <span class="text-[10px] text-gray-400">1 Günlük maaş kesintisi uygulanır.</span>
+          </div>
+          <input type="checkbox" id="checkAbsence" class="w-5 h-5 accent-red-500 rounded cursor-pointer">
+        </div>
+
+        <!-- YENİ EKLENEN MOR RAPORLU KUTUSU -->
+        <div class="p-3 bg-purple-950/30 rounded-xl border border-purple-900/50 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-bold text-purple-400 block">Raporlu mu?</span>
+            <span class="text-[10px] text-gray-400">Sağlık raporlu olunan gün.</span>
+          </div>
+          <input type="checkbox" id="checkSick" class="w-5 h-5 accent-purple-500 rounded cursor-pointer">
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="saveDayEntry()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-emerald-500 text-black font-bold text-sm shadow-md">Kaydet</button>
+        <button onclick="clearDayEntry()" class="px-4 py-3 rounded-xl bg-red-950/60 text-red-400 font-medium text-sm border border-red-800">Sil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENEL MENÜ MODALI -->
+  <div id="menuModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-gray-950 border border-emerald-500/50 rounded-3xl p-6 max-w-md w-full relative max-h-[85vh] overflow-y-auto custom-scrollbar neon-border-green">
+      <button onclick="closeMenuModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
+      <h3 class="text-lg font-bold text-yellow-400 mb-4" id="menuModalTitle">Bilgi</h3>
+      <div id="menuModalContent" class="text-xs text-gray-300 leading-relaxed space-y-3">
+        <!-- Dinamik İçerik -->
+      </div>
+    </div>
+  </div>
+
+  <!-- KVKK MODAL -->
+  <div id="kvkkModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-gray-950 border border-emerald-500/50 rounded-3xl p-6 max-w-md w-full relative neon-border-green">
+      <button onclick="closeKvkkModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
+      <h3 class="text-lg font-bold text-yellow-400 mb-3 flex items-center gap-2">📄 <span>KVKK Aydınlatma Metni</span></h3>
+      <div class="text-xs text-gray-300 leading-relaxed max-h-72 overflow-y-auto custom-scrollbar space-y-3 pr-1">
+        <p><strong>1. Veri Sorumlusunun Kimliği:</strong> ShiftPulse uygulaması kapsamında, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca veri sorumlusu sıfatıyla, kullanıcılarımızın kişisel verilerinin güvenliğine en üst düzeyde önem veriyoruz.</p>
+        <p><strong>2. İşlenen Kişisel Veriler ve Amaçları:</strong> Paylaştığınız Ad-Soyad, E-posta, Şirket Bilgisi, Telefon, Net Maaş ve Mesai/Harcama kayıtları; yalnızca kişisel maaş/mesai hak edişlerinizi hesaplamak amacıyla işlenir.</p>
+        <p><strong>3. Verilerin Depolanması ve Güvenliği:</strong> ShiftPulse mimarisi gereği tüm kişisel veriler harici sunuculara aktarılmaksızın <strong>doğrudan cihazınızın yerel belleğinde (localStorage)</strong> güvenle saklanır.</p>
+        <p><strong>4. İlgili Kişinin Hakları:</strong> Profil alanından verilerinizi güncelleyebilir veya "Tüm Verileri Sil" seçeneği ile cihazınızdaki verileri kalıcı olarak silebilirsiniz.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-emerald-900/50 z-40 bg-nav">
+    <div class="max-w-lg mx-auto grid grid-cols-4 py-2 px-2">
+      <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center gap-1 text-emerald-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="text-[10px] font-bold">Ana Sayfa</span>
+      </button>
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center gap-1 text-gray-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span class="text-[10px] font-bold">Takvim</span>
+      </button>
+      <button onclick="switchTab('wallet')" id="nav-wallet" class="flex flex-col items-center gap-1 text-gray-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span class="text-[10px] font-bold">Cüzdan</span>
+      </button>
+      <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center gap-1 text-gray-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span class="text-[10px] font-bold">Profil</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    const turkeyHolidays = {
+      "01-01": "Yılbaşı", "04-23": "23 Nisan", "05-01": "1 Mayıs",
+      "05-19": "19 Mayıs", "07-15": "15 Temmuz", "08-30": "30 Ağustos", "10-29": "Cumhuriyet Bayramı"
+    };
+
+    let theme = localStorage.getItem('sp_theme') || 'dark';
+    let isSalaryMasked = false;
+    let selectedDate = null;
+    let selectedRateVal = 1.0;
+    let currentMonthDate = new Date();
+
+    let shiftData = JSON.parse(localStorage.getItem('sp_shifts')) || {};
+    let expenses = JSON.parse(localStorage.getItem('sp_expenses')) || [];
+    let profile = JSON.parse(localStorage.getItem('sp_profile')) || { name: "", email: "", company: "", phone: "" };
+    let savedSalary = localStorage.getItem('sp_salary') || "54000";
+
+    let chartLast7Instance = null;
+    let chartIncExpInstance = null;
+    let chartStatsModalInstance = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inputMonthYear').value = `${currentMonthDate.getFullYear()}-${String(currentMonthDate.getMonth() + 1).padStart(2, '0')}`;
+      document.getElementById('inputSalary').value = savedSalary;
+      applyTheme(theme);
+      checkUserRegistration();
+      loadProfile();
+      setDynamicGreeting();
+      renderCalendar();
+      updateCalculations();
+      initCharts();
+
+      const bgPhoto = localStorage.getItem('sp_pro_photo');
+      if (bgPhoto) {
+        document.getElementById('bgPhotoOverlay').style.backgroundImage = `url(${bgPhoto})`;
+      }
+
+      const userAvatar = localStorage.getItem('sp_user_avatar');
+      if (userAvatar) {
+        document.getElementById('imgProfileAvatar').src = userAvatar;
+        document.getElementById('imgProfileAvatar').classList.remove('hidden');
+        document.getElementById('avatarInitialsContainer').classList.add('hidden');
+      }
+    });
+
+    function setDynamicGreeting() {
+      const hour = new Date().getHours();
+      const greetingEl = document.getElementById('dynamicGreeting');
+      if (hour >= 6 && hour < 18) {
+        greetingEl.innerHTML = "☀️ Günaydın";
+      } else {
+        greetingEl.innerHTML = "🌙 İyi Akşamlar";
+      }
+    }
+
+    function toggleSideMenu() {
+      const menu = document.getElementById('sideMenu');
+      const overlay = document.getElementById('sideMenuOverlay');
+      if (menu.classList.contains('-translate-x-full')) {
+        menu.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+      } else {
+        menu.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      }
+    }
+
+    function checkUserRegistration() {
+      if (!localStorage.getItem('sp_registered')) {
+        document.getElementById('welcomeModal').classList.remove('hidden');
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      profile.name = document.getElementById('regName').value.trim();
+      profile.email = document.getElementById('regEmail').value.trim();
+      profile.company = document.getElementById('regCompany').value.trim();
+      profile.phone = document.getElementById('regPhone').value.trim();
+      const salary = document.getElementById('regSalary').value.trim() || "54000";
+
+      localStorage.setItem('sp_profile', JSON.stringify(profile));
+      localStorage.setItem('sp_salary', salary);
+      document.getElementById('inputSalary').value = salary;
+
+      localStorage.setItem('sp_registered', 'true');
+      document.getElementById('welcomeModal').classList.add('hidden');
+      loadProfile();
+      updateCalculations();
+    }
+
+    function resetAllData() {
+      if (confirm("Tüm verileriniz ve kayıtlarınız silinecek. Emin misiniz?")) {
+        localStorage.clear();
+        location.reload();
+      }
+    }
+
+    function toggleSalaryMask() {
+      isSalaryMasked = !isSalaryMasked;
+      updateCalculations();
+    }
+
+    function switchTab(tabName) {
+      ['home', 'calendar', 'wallet', 'profile'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`nav-${t}`).className = 'flex flex-col items-center gap-1 text-gray-500';
+      });
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      document.getElementById(`nav-${tabName}`).className = 'flex flex-col items-center gap-1 text-emerald-400';
+      if (tabName === 'home') updateCharts();
+    }
+
+    function renderCalendar() {
+      const monthVal = document.getElementById('inputMonthYear').value;
+      if (!monthVal) return;
+      const [year, month] = monthVal.split('-').map(Number);
+      const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+      document.getElementById('calendarMonthTitle').innerText = `${monthNames[month - 1]} ${year}`;
+
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      let startingDay = firstDay.getDay() - 1;
+      if (startingDay === -1) startingDay = 6;
+
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < startingDay; i++) {
+        grid.appendChild(Object.assign(document.createElement('div'), { className: 'h-11 bg-black/10 opacity-20 rounded-xl' }));
+      }
+
+      for (let d = 1; d <= lastDay.getDate(); d++) {
+        const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayData = shiftData[dateKey] || {};
+        const holidayName = turkeyHolidays[`${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`];
+
+        const dayBtn = document.createElement('button');
+        dayBtn.onclick = () => {
+          document.querySelectorAll('#calendarGrid button').forEach(b => b.classList.remove('neon-border-blue', 'bg-blue-950/40'));
+          dayBtn.classList.add('neon-border-blue', 'bg-blue-950/40');
+          openDayEdit(dateKey);
+        };
+
+        let style = 'border-gray-800 bg-black/40';
+        let badge = '';
+
+        if (dayData.absence) {
+          style = 'neon-border-red bg-red-950/40 text-red-300';
+          badge = `<span class="text-[8px] bg-red-600 text-white px-1 rounded font-bold">YOK</span>`;
+        } else if (dayData.sick) {
+          style = 'neon-border-purple bg-purple-950/40 text-purple-300';
+          badge = `<span class="text-[8px] bg-purple-600 text-white px-1 rounded font-bold">RAPOR</span>`;
+        } else if (dayData.hours > 0) {
+          style = 'neon-border-green bg-green-950/40 text-green-300';
+          badge = `<span class="text-[9px] text-green-400 font-bold">${dayData.hours}s</span>`;
+        } else if (holidayName) {
+          style = 'neon-border-purple bg-purple-950/30 text-purple-300';
+          badge = `<span class="text-[7px] text-purple-300 truncate max-w-[44px] block font-bold" title="${holidayName}">${holidayName}</span>`;
+        }
+
+        dayBtn.className = `h-12 rounded-xl border flex flex-col items-center justify-center p-1 transition ${style}`;
+        dayBtn.innerHTML = `<span class="text-xs font-bold text-gray-200">${d}</span>${badge}`;
+        grid.appendChild(dayBtn);
+      }
+      renderShiftList();
+    }
+
+    function renderShiftList() {
+      const container = document.getElementById('shiftListContainer');
+      const monthVal = document.getElementById('inputMonthYear').value;
+      const monthEntries = Object.keys(shiftData).filter(k => k.startsWith(monthVal));
+
+      let monthTotalHours = 0;
+      monthEntries.forEach(k => {
+        if (shiftData[k].hours) monthTotalHours += shiftData[k].hours;
+      });
+      document.getElementById('txtCalendarTotalHours').innerText = `Toplam: ${monthTotalHours} Saat`;
+
+      if (monthEntries.length === 0) {
+        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">Bu aya ait kayıtlı mesai bulunmuyor.</p>`;
+        return;
+      }
+
+      container.innerHTML = monthEntries.map(k => {
+        const item = shiftData[k];
+        let badgeText = `<span class="text-emerald-400 font-bold">${item.hours} Saat (${item.rate}x)</span>`;
+        if (item.absence) badgeText = '<span class="text-red-400 font-bold">Devamsızlık</span>';
+        if (item.sick) badgeText = '<span class="text-purple-400 font-bold">Raporlu</span>';
+
+        return `<div class="flex justify-between items-center bg-black/50 p-2.5 rounded-xl border border-gray-800 text-xs">
+          <span class="text-gray-300 font-bold">${k}</span>
+          ${badgeText}
+        </div>`;
+      }).join('');
+    }
+
+    function changeMonth(delta) {
+      const [year, month] = document.getElementById('inputMonthYear').value.split('-').map(Number);
+      const nd = new Date(year, month - 1 + delta, 1);
+      document.getElementById('inputMonthYear').value = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}`;
+      renderCalendar();
+      updateCalculations();
+    }
+
+    function selectRate(rate) {
+      selectedRateVal = rate;
+      [0.5, 1.0, 1.5, 2.0].forEach(r => {
+        const btn = document.getElementById(`btnRate${String(r).replace('.', '')}`);
+        if (btn) {
+          if (r === rate) {
+            btn.className = "py-2.5 rounded-xl border-2 border-blue-500 bg-blue-950/60 text-xs font-black text-blue-300 shadow-md shadow-blue-900/40";
+          } else {
+            btn.className = "py-2.5 rounded-xl border border-gray-800 bg-black text-xs font-extrabold text-gray-300 hover:border-blue-500 transition";
+          }
+        }
+      });
+    }
+
+    function openDayEdit(dateKey) {
+      selectedDate = dateKey;
+      const data = shiftData[dateKey] || {};
+      document.getElementById('selectedDateTitle').innerText = `${dateKey} - Düzenle`;
+      document.getElementById('inputDayHours').value = data.hours || '';
+      
+      const dObj = new Date(dateKey);
+      const dayOfWeek = dObj.getDay();
+      const defaultRate = (dayOfWeek === 0 || dayOfWeek === 6) ? 1.5 : 1.0;
+      
+      selectRate(data.rate || defaultRate);
+      document.getElementById('checkAbsence').checked = !!data.absence;
+      document.getElementById('checkSick').checked = !!data.sick;
+      document.getElementById('dayEditModal').classList.remove('hidden');
+    }
+
+    function closeDayEdit() { document.getElementById('dayEditModal').classList.add('hidden'); }
+
+    function saveDayEntry() {
+      if (!selectedDate) return;
+      const hours = parseFloat(document.getElementById('inputDayHours').value) || 0;
+      const rate = selectedRateVal || 1.0;
+      const absence = document.getElementById('checkAbsence').checked;
+      const sick = document.getElementById('checkSick').checked;
+
+      if (hours === 0 && !absence && !sick) delete shiftData[selectedDate];
+      else shiftData[selectedDate] = { hours, rate, absence, sick };
+
+      localStorage.setItem('sp_shifts', JSON.stringify(shiftData));
+      closeDayEdit();
+      renderCalendar();
+      updateCalculations();
+    }
+
+    function clearDayEntry() {
+      if (!selectedDate) return;
+      delete shiftData[selectedDate];
+      localStorage.setItem('sp_shifts', JSON.stringify(shiftData));
+      closeDayEdit();
+      renderCalendar();
+      updateCalculations();
+    }
+
+    function updateCalculations() {
+      const baseSalary = parseFloat(document.getElementById('inputSalary').value) || 0;
+      const hourlyRate = baseSalary / 225;
+      const dailySalary = baseSalary / 30;
+
+      let otPay = 0, absDed = 0, otHours = 0;
+      const monthVal = document.getElementById('inputMonthYear').value;
+
+      Object.keys(shiftData).forEach(k => {
+        if (k.startsWith(monthVal)) {
+          const e = shiftData[k];
+          if (e.absence) absDed += dailySalary;
+          else if (e.hours > 0) { 
+            otHours += e.hours; 
+            let effectiveMultiplier = e.rate;
+            if (e.rate === 1.0) effectiveMultiplier = 1.0074;
+            otPay += e.hours * hourlyRate * effectiveMultiplier; 
+          }
+        }
+      });
+
+      const net = baseSalary + otPay - absDed;
+
+      if (isSalaryMasked) {
+        document.getElementById('homeNetSalary').innerText = "🔒 Gizli";
+        document.getElementById('homeOvertimePay').innerText = "🔒 Gizli";
+        document.getElementById('homeTotalEarnings').innerText = "🔒 Gizli";
+        document.getElementById('txtWalletIncome').innerText = "🔒 Gizli";
+      } else {
+        document.getElementById('homeNetSalary').innerText = `₺${Math.round(baseSalary).toLocaleString('tr-TR')}`;
+        document.getElementById('homeOvertimePay').innerText = `₺${otPay.toFixed(2).toLocaleString('tr-TR')}`;
+        document.getElementById('homeTotalEarnings').innerText = `₺${Math.round(net).toLocaleString('tr-TR')}`;
+        document.getElementById('txtWalletIncome').innerText = `₺${Math.round(net).toLocaleString('tr-TR')}`;
+      }
+
+      document.getElementById('homeOvertimeHoursSub').innerText = `${otHours} Saat Toplam`;
+      document.getElementById('homeTotalOvertimeHours').innerText = `${otHours} Saat`;
+      updateWalletSummary();
+    }
+
+    function addExpense() {
+      const title = document.getElementById('inputExpTitle').value.trim();
+      const amount = parseFloat(document.getElementById('inputExpAmount').value) || 0;
+      if (!title || amount <= 0) return;
+      expenses.push({ title, amount });
+      localStorage.setItem('sp_expenses', JSON.stringify(expenses));
+      document.getElementById('inputExpTitle').value = '';
+      document.getElementById('inputExpAmount').value = '';
+      updateWalletSummary();
+      updateCharts();
+    }
+
+    function updateWalletSummary() {
+      const totalExp = expenses.reduce((a, c) => a + c.amount, 0);
+      document.getElementById('txtWalletExpenses').innerText = `₺${Math.round(totalExp).toLocaleString('tr-TR')}`;
+      const container = document.getElementById('expenseListContainer');
+      if (expenses.length === 0) {
+        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">Henüz harcama kaydı eklenmedi.</p>`;
+        return;
+      }
+      container.innerHTML = expenses.map(ex => `<div class="flex justify-between items-center bg-black/50 p-2.5 rounded-xl border border-gray-800"><span class="text-xs text-gray-200">${ex.title}</span><span class="text-xs text-red-400 font-black">-₺${ex.amount.toLocaleString('tr-TR')}</span></div>`).join('');
+    }
+
+    function saveProfile() {
+      profile.name = document.getElementById('inputProfileName').value;
+      profile.company = document.getElementById('inputProfileCompany').value;
+      profile.email = document.getElementById('inputProfileEmail').value;
+      profile.phone = document.getElementById('inputProfilePhone').value;
+      
+      const salaryVal = document.getElementById('inputSalary').value || "54000";
+      localStorage.setItem('sp_salary', salaryVal);
+
+      localStorage.setItem('sp_profile', JSON.stringify(profile));
+      loadProfile();
+      updateCalculations();
+      updateCharts();
+    }
+
+    function loadProfile() {
+      if (profile.name) {
+        document.getElementById('txtProfileFullName').innerText = profile.name;
+        document.getElementById('inputProfileName').value = profile.name;
+        document.getElementById('avatarInitials').innerText = profile.name.split(' ').map(n => n[0]).join('').toUpperCase() || 'K';
+      }
+      if (profile.company) { document.getElementById('txtProfileCompany').innerText = profile.company; document.getElementById('inputProfileCompany').value = profile.company; }
+      if (profile.email) { document.getElementById('txtProfileEmail').innerText = profile.email; document.getElementById('inputProfileEmail').value = profile.email; }
+      if (profile.phone) { document.getElementById('txtProfilePhone').innerText = "Tel: " + profile.phone; document.getElementById('inputProfilePhone').value = profile.phone; }
+      
+      document.getElementById('inputSalary').value = localStorage.getItem('sp_salary') || "54000";
+    }
+
+    function triggerProfilePhotoUpload() { document.getElementById('inputProfilePhoto').click(); }
+    function uploadProfilePhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        localStorage.setItem('sp_user_avatar', evt.target.result);
+        document.getElementById('imgProfileAvatar').src = evt.target.result;
+        document.getElementById('imgProfileAvatar').classList.remove('hidden');
+        document.getElementById('avatarInitialsContainer').classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function changeTheme(t) {
+      theme = t;
+      localStorage.setItem('sp_theme', t);
+      applyTheme(t);
+    }
+
+    function applyTheme(t) {
+      if (t === 'light') document.body.classList.add('light-theme');
+      else document.body.classList.remove('light-theme');
+    }
+
+    function openKvkkModal() { document.getElementById('kvkkModal').classList.remove('hidden'); }
+    function closeKvkkModal() { document.getElementById('kvkkModal').classList.add('hidden'); }
+
+    // MENÜ MODALLARI (İSG KISMI DETAYLI VE GÖRSELLİ ENTEGRE EDİLDİ)
+    function openMenuModal(type) {
+      const modal = document.getElementById('menuModal');
+      const title = document.getElementById('menuModalTitle');
+      const content = document.getElementById('menuModalContent');
+      modal.classList.remove('hidden');
+
+      if (type === 'company') {
+        title.innerText = "🏢 İş Yeri Bilgileri";
+        content.innerHTML = `
+          <div class="space-y-2">
+            <p><strong>Şirket Adı:</strong> ${profile.company || 'Belirtilmedi'}</p>
+            <p><strong>Çalışan Adı:</strong> ${profile.name || 'Belirtilmedi'}</p>
+            <p><strong>İletişim:</strong> ${profile.email || 'Belirtilmedi'} / ${profile.phone || 'Belirtilmedi'}</p>
+            <p class="text-gray-400 text-[11px] mt-2">İş yeri bilgilerinizi profil sekmesinden güncelleyebilirsiniz.</p>
+          </div>
+        `;
+      } else if (type === 'stats') {
+        title.innerText = "📊 İstatistikler & Analiz Grafiği";
+        let totalHours = 0;
+        let totalAbsenceDays = 0;
+        Object.keys(shiftData).forEach(k => {
+          if (shiftData[k].hours) totalHours += shiftData[k].hours;
+          if (shiftData[k].absence) totalAbsenceDays += 1;
+        });
+
+        content.innerHTML = `
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-2 text-center">
+              <div class="bg-black/50 p-2.5 rounded-xl border border-emerald-800">
+                <span class="text-[10px] text-gray-400 block">Toplam Mesai</span>
+                <span class="text-base font-black text-emerald-400">${totalHours} Saat</span>
+              </div>
+              <div class="bg-black/50 p-2.5 rounded-xl border border-red-800">
+                <span class="text-[10px] text-gray-400 block">Devamsızlık</span>
+                <span class="text-base font-black text-red-400">${totalAbsenceDays} Gün</span>
+              </div>
+            </div>
+            
+            <div class="bg-black/60 p-3 rounded-2xl border border-gray-800">
+              <h4 class="text-xs font-bold text-yellow-400 mb-2">Aylık Çalışma Grafiği</h4>
+              <div class="h-40">
+                <canvas id="chartStatsModal"></canvas>
+              </div>
+            </div>
+          </div>
+        `;
+
+        setTimeout(() => {
+          const ctx = document.getElementById('chartStatsModal').getContext('2d');
+          if (chartStatsModalInstance) chartStatsModalInstance.destroy();
+          chartStatsModalInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+              datasets: [{
+                label: 'Mesai (Saat)',
+                data: [20, 35, 45, 60, 30, 50, 70, 85, 40, totalHours || 25, 0, 0],
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                fill: true,
+                tension: 0.3
+              }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+          });
+        }, 100);
+
+      } else if (type === 'badges') {
+        title.innerText = "🏅 Rozetler & İlerleme Barları";
+        let totalHours = 0;
+        let absenceCount = 0;
+        Object.keys(shiftData).forEach(k => {
+          if (shiftData[k].hours) totalHours += shiftData[k].hours;
+          if (shiftData[k].absence) absenceCount += 1;
+        });
+
+        const bronzePct = Math.min(100, Math.round((totalHours / 380) * 100));
+        const silverPct = Math.min(100, Math.round((totalHours / 760) * 100));
+        const goldPct = Math.min(100, Math.round((totalHours / 1140) * 100));
+
+        content.innerHTML = `
+          <div class="space-y-4 text-xs">
+            <div class="p-3 bg-black/40 rounded-xl border border-gray-800 flex justify-between items-center">
+              <span>Toplam Mesainiz: <strong class="text-emerald-400">${totalHours} Saat</strong></span>
+              <span>Devamsızlık: <strong class="text-yellow-400">${absenceCount} Gün</strong></span>
+            </div>
+
+            <div class="space-y-1 bg-black/50 p-3 rounded-xl border border-amber-800">
+              <div class="flex justify-between font-bold text-amber-500"><span>🥉 Bronz Rozet (380 Saat)</span><span>%${bronzePct}</span></div>
+              <div class="w-full h-2.5 bg-gray-900 rounded-full overflow-hidden p-0.5 border border-amber-900"><div class="h-full bg-amber-600 rounded-full" style="width: ${bronzePct}%"></div></div>
+            </div>
+
+            <div class="space-y-1 bg-black/50 p-3 rounded-xl border border-gray-600">
+              <div class="flex justify-between font-bold text-gray-300"><span>🥈 Gümüş Rozet (760 Saat)</span><span>%${silverPct}</span></div>
+              <div class="w-full h-2.5 bg-gray-900 rounded-full overflow-hidden p-0.5 border border-gray-700"><div class="h-full bg-gray-300 rounded-full" style="width: ${silverPct}%"></div></div>
+            </div>
+
+            <div class="space-y-1 bg-black/50 p-3 rounded-xl border border-yellow-600">
+              <div class="flex justify-between font-bold text-yellow-400"><span>🏆 Altın Rozet (1140 Saat)</span><span>%${goldPct}</span></div>
+              <div class="w-full h-2.5 bg-gray-900 rounded-full overflow-hidden p-0.5 border border-yellow-800"><div class="h-full bg-yellow-400 rounded-full" style="width: ${goldPct}%"></div></div>
+            </div>
+          </div>
+        `;
+      } else if (type === 'guidance') {
+        title.innerText = "📚 İş Yeri Rehberlik Hizmetleri";
+        content.innerHTML = `
+          <div class="space-y-3 text-xs">
+            <p><strong>1. İş Sağlığı ve Güvenliği Kültürü:</strong> Güvenli çalışma ortamının sürekliliği temel prensibimizdir. Tüm çalışanlarımız potansiyel riskleri yöneticilerine bildirmekle yükümlüdür.</p>
+            <p><strong>2. Ergonomi ve Çalışma Koşulları:</strong> Atölye ve saha çalışmalarında doğru duruş pozisyonlarına dikkat edilmeli, dinlenme molaları düzenli kullanılmalıdır.</p>
+          </div>
+        `;
+      } else if (type === 'isg') {
+        title.innerText = "⚠️ İSG & Detaylı Güvenlik Rehberi";
+        content.innerHTML = `
+          <div class="space-y-4 text-xs">
+            <!-- 5 METRE UYARISI -->
+            <div class="p-3 bg-red-950/50 rounded-2xl border-2 border-red-600 flex items-center gap-3">
+              <div class="w-12 h-12 bg-red-600 text-white font-black text-xl rounded-xl flex items-center justify-center shrink-0">5M</div>
+              <div>
+                <strong class="text-red-400 block text-xs">MAKİNE EMNİYET MESAFESİ UYARISI</strong>
+                <p class="text-gray-200 text-[11px] mt-0.5">Çalışan ve çalışmaya hazır makinelerin yanına <strong>en az 5 metre</strong> yaklaşmak hayati derecede tehlikeli ve yasaktır!</p>
+              </div>
+            </div>
+
+            <!-- ACİL DURUM PROSEDÜRLERİ -->
+            <div class="space-y-2">
+              <h4 class="font-bold text-yellow-400 flex items-center gap-1.5">🚨 Acil Durum Prosedürleri</h4>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-black/50 p-2.5 rounded-xl border border-gray-800">
+                  <span class="text-base font-bold text-red-400 block">🔥 Yangın Anı</span>
+                  <p class="text-[10px] text-gray-400 mt-1">Alarm butonuna basın, yangın söndürücü ile müdahale edin veya sahayı acilen terk edin.</p>
+                </div>
+                <div class="bg-black/50 p-2.5 rounded-xl border border-gray-800">
+                  <span class="text-base font-bold text-emerald-400 block">🏃 Tahliye</span>
+                  <p class="text-[10px] text-gray-400 mt-1">Yeşil acil çıkış yönlendirmelerini takip ederek Acil Toplanma Alanına gidin.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- KİŞİSEL KORUYUCU DONANIMLAR (KKD) - DETAYLI VE GÖRSELLİ -->
+            <div class="space-y-2">
+              <h4 class="font-bold text-emerald-400 flex items-center gap-1.5">🛡️ Kişisel Koruyucu Donanımlar (KKD)</h4>
+              <div class="grid grid-cols-1 gap-2">
+                
+                <div class="flex items-center gap-3 bg-black/50 p-2.5 rounded-xl border border-emerald-900/50">
+                  <span class="text-2xl shrink-0">👔</span>
+                  <div>
+                    <strong class="text-emerald-300 block">İş Elbisesi:</strong>
+                    <p class="text-[10px] text-gray-300">Saha şartlarına uygun, reflektörlü, antistatik ve yüksek görünürlüklü koruyucu kıyafetler giyilmelidir.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-black/50 p-2.5 rounded-xl border border-emerald-900/50">
+                  <span class="text-2xl shrink-0">🥾</span>
+                  <div>
+                    <strong class="text-emerald-300 block">İş Ayakkabısı:</strong>
+                    <p class="text-[10px] text-gray-300">Ağır parça düşmelerine ve kaymalara karşı çelik burunlu, tabanı delinmez iş ayakkabısı giyilmelidir.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-black/50 p-2.5 rounded-xl border border-emerald-900/50">
+                  <span class="text-2xl shrink-0">🥽</span>
+                  <div>
+                    <strong class="text-emerald-300 block">İş Gözlüğü:</strong>
+                    <p class="text-[10px] text-gray-300">Çapak, toz ve sıvı sıçramalarına karşı darbeye dayanıklı koruyucu iş gözlüğü takılmalıdır.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-black/50 p-2.5 rounded-xl border border-emerald-900/50">
+                  <span class="text-2xl shrink-0">🪖</span>
+                  <div>
+                    <strong class="text-emerald-300 block">Baret:</strong>
+                    <p class="text-[10px] text-gray-300">Yukarıdan düşebilecek cisimlere ve baş yaralanmalarına karşı sahada baret takmak zorunludur.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-black/50 p-2.5 rounded-xl border border-emerald-900/50">
+                  <span class="text-2xl shrink-0">🛡️</span>
+                  <div>
+                    <strong class="text-emerald-300 block">Siperlik:</strong>
+                    <p class="text-[10px] text-gray-300">Taşlama, kaynak ve kimyasal işlemler sırasında tüm yüzü koruyan şeffaf siperlik kullanılmalıdır.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-black/50 p-2.5 rounded-xl border border-emerald-900/50">
+                  <span class="text-2xl shrink-0">🎧</span>
+                  <div>
+                    <strong class="text-emerald-300 block">Gürültü Kulaklığı / Tıkacı:</strong>
+                    <p class="text-[10px] text-gray-300">85 dB üzerindeki yüksek gürültülü makine sahalarında kulak koruyucuları takılmalıdır.</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- BAKIM VE ONARIM (LOTO) -->
+            <div class="space-y-2">
+              <h4 class="font-bold text-purple-400 flex items-center gap-1.5">🔧 Bakım & Onarım (LOTO - Etiketleme / Kilitleme)</h4>
+              <div class="p-3 bg-purple-950/20 rounded-xl border border-purple-800 text-[11px] space-y-1 text-purple-200">
+                <p>• Bakıma alınacak makinenin ana şalter enerjisini kesin.</p>
+                <p>• Şalter üzerine şahsi kilit ve bakımdadır uyarı etiketini asın.</p>
+                <p>• Enerji sıfırlanmadan makineye müdahale edilmesine izin vermeyin.</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (type === 'tax') {
+        title.innerText = "⚖️ Vergi Danışmanı Asistanı";
+        content.innerHTML = `<div class="space-y-3 text-xs"><p>Gelir vergisi dilimleri kümülatif matraha göre yıl içinde kademeli artar.</p></div>`;
+      } else if (type === 'sgk') {
+        title.innerText = "🧮 Detaylı SGK Prim Hesaplayıcı";
+        const salaryVal = parseFloat(document.getElementById('inputSalary').value) || 54000;
+        const employeeSgk = salaryVal * 0.14;
+        const employeeUnemployment = salaryVal * 0.01;
+        content.innerHTML = `
+          <div class="space-y-3 text-xs">
+            <div class="p-3 bg-black/50 rounded-xl border border-emerald-800 space-y-2">
+              <div class="flex justify-between"><span>Girilen Net Maaş:</span> <strong class="text-emerald-400">₺${salaryVal.toLocaleString('tr-TR')}</strong></div>
+            </div>
+            <div class="space-y-1.5 bg-black/40 p-3 rounded-xl border border-gray-800">
+              <div class="flex justify-between"><span>SGK İşçi Payı (%14):</span> <span class="text-red-400 font-bold">₺${Math.round(employeeSgk).toLocaleString('tr-TR')}</span></div>
+              <div class="flex justify-between"><span>İşsizlik Sigortası (%1):</span> <span class="text-red-400 font-bold">₺${Math.round(employeeUnemployment).toLocaleString('tr-TR')}</span></div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function closeMenuModal() { document.getElementById('menuModal').classList.add('hidden'); }
+
+    function triggerPhotoUpload() { document.getElementById('inputProPhoto').click(); }
+    function uploadProPhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        localStorage.setItem('sp_pro_photo', evt.target.result);
+        document.getElementById('bgPhotoOverlay').style.backgroundImage = `url(${evt.target.result})`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function initCharts() {
+      const ctx1 = document.getElementById('chartLast7Days').getContext('2d');
+      chartLast7Instance = new Chart(ctx1, {
+        type: 'bar',
+        data: { labels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'], datasets: [{ data: [1100, 1250, 1100, 1400, 1100, 1800, 0], backgroundColor: '#22c55e', borderRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      const ctx2 = document.getElementById('chartIncomeVSExpense').getContext('2d');
+      chartIncExpInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: { labels: ['Kalan Gelir', 'Harcama'], datasets: [{ data: [54000, 0], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#e2e8f0', font: { size: 10 } } } } }
+      });
+    }
+
+    function updateCharts() {
+      if (!chartIncExpInstance) return;
+      const baseSalary = parseFloat(document.getElementById('inputSalary').value) || 0;
+      const totalExp = expenses.reduce((a, c) => a + c.amount, 0);
+      chartIncExpInstance.data.datasets[0].data = [Math.max(0, baseSalary - totalExp), totalExp];
+      chartIncExpInstance.update();
+    }
+  </script>
+</body>
+</html>
